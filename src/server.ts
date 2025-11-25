@@ -13,5 +13,6 @@ await aplicacao.register(cors, {
 
 await aplicacao.register(insertTask, { prefix: '/api' });
 
-await aplicacao.listen({port: 3220, host: '0.0.0.0'});
-aplicacao.log.info("Fastify rodando na porta 3220");
+aplicacao.listen({port: 3220, host: '0.0.0.0'}, () =>{
+    console.log("Fastify rodando na porta 3220");
+});
