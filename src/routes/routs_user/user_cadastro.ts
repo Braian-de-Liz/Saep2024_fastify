@@ -4,18 +4,19 @@ import { connectar } from "../../data/conecction.js";
 
 
 
-const cadastarr_user:FastifyPluginAsync = async (aplicacao, options) =>{
+const cadastarr_user: FastifyPluginAsync = async (aplicacao, options) => {
 
-    const schema_json = schema:{
-        body:{
-            
+    const schema_json = {
+        schema: {
+            body: {
+                nome:""
+            }
         }
     }
-    
-    aplicacao.post("/usuario",schema_json ,async (request, replay) =>{
-        
+    aplicacao.post("/usuario", schema_json, async (request, replay) => {
+
     });
-    
+
 }
 
-export{cadastarr_user};
+export default cadastarr_user ;
