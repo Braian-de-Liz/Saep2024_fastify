@@ -1,15 +1,23 @@
 // src\routes\routs_user\user_cadastro.ts
-import { FastifyPluginAsync } from 'fastify';
+import { FastifyPluginAsync, RouteShorthandOptions } from 'fastify';
 import { connectar } from "../../data/conecction.js";
 
-
+interface registrar_user {
+    nome: string;
+    email: string;    
+    senha: string;
+}
 
 const cadastarr_user: FastifyPluginAsync = async (aplicacao, options) => {
 
-    const schema_json = {
+    const schema_json:RouteShorthandOptions = {
         schema: {
             body: {
-                nome:""
+                type:'object',
+                requeired: ['nome', 'email', 'senha'],
+                properties:{
+
+                }
             }
         }
     }

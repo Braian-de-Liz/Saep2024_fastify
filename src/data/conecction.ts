@@ -1,4 +1,4 @@
-// src/data/conecction.ts (ou similar)
+// src/data/conecction.ts 
 
 import { Pool } from "pg";
 import { PoolClient } from 'pg';
