@@ -1,6 +1,5 @@
 import { FastifyPluginAsync, RouteShorthandOptions } from 'fastify';
-// import bcrypt from 'bcryptjs';
-import { connectar } from "../../data/conecction.js";
+import bcrypt from 'bcryptjs';
 
 interface user_login {
     email: string;
@@ -29,17 +28,13 @@ const login: FastifyPluginAsync = async (aplicacao, options) => {
 
         let db;
         try{
-            db = await connectar();
 
-            const procurar_user = await db.query("",[]);
         }
         catch(erro){
 
         }
 
-        finally{
-            
-        }
+
     });
 
 }
