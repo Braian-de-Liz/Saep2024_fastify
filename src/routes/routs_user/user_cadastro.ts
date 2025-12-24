@@ -1,35 +1,25 @@
 // src\routes\routs_user\user_cadastro.ts
-import { FastifyPluginAsync, RouteShorthandOptions } from 'fastify';
+import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 
-interface registrar_user {
-    nome: string;
-    email: string;
-    senha: string;
-}
 
-const cadastarr_user: FastifyPluginAsync = async (aplicacao, options) => {
 
-    const schema_json: RouteShorthandOptions = {
-        schema: {
-            body: {
-                type: 'object',
-                required: ['nome', 'email', 'senha'],
-                properties: {
-                    nome: { type: 'string' },
-                    email: { type: 'string', format: 'email' },
-                    senha: { type: 'string', minLength: 8 }
+const cadastarr_user: FastifyPluginAsyncZod = async (aplicacao, options) => {
 
-                }
-            }
-        }
-    }
+    const schema_zod = z.object({
+        nome: z.string().min(2).max(87),
+        email: z.string().min(6).email(),
+        senha: z.string().min(6)
+    });
 
-    aplicacao.post<{ Body: registrar_user }>("/usuario", schema_json, async (request, reply) => {
+
+
+    aplicacao.post("/usuario", { schema: { body: schema_zod } }, async (request, reply) => {
         const { nome, email, senha } = request.body;
 
         try {
-            const procurar_user = await aplicacao.db.query("SELECT id FROM usuarios WHERE email = $1", [email]);
+            const procurar_user = await aplicacao.pg.query("SELECT id FROM usuarios WHERE email = $1", [email]);
 
             if (procurar_user.rowCount !== 0) {
                 console.error("usuário já cadastrado");
@@ -43,12 +33,12 @@ const cadastarr_user: FastifyPluginAsync = async (aplicacao, options) => {
             const senha_segura = await bcrypt.hash(senha, 10);
 
 
-            await aplicacao.db.query("INSERT INTO usuarios (nome, email, senha) VALUES($1, $2, $3)", [nome, email, senha_segura]);
+            await aplicacao.pg.query("INSERT INTO usuarios (nome, email, senha) VALUES($1, $2, $3)", [nome, email, senha_segura]);
 
             reply.status(200).send({
-                status: 'erro',
+                status: 'Sucesso',
                 menssagem: "usuário cadastrado com sucesso"
-            }); 
+            });
 
         }
         catch (erro) {

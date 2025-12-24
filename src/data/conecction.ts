@@ -1,8 +1,8 @@
 // src\data\conecction.ts
 import { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
-import { Pool } from 'pg';
-import dotenv from 'dotenv'
+import fastifyPostgres from '@fastify/postgres';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -10,36 +10,21 @@ dotenv.config();
 
 declare module 'fastify' {
   interface FastifyInstance {
-    db: Pool;
+    db: any;
   }
 }
 
-const dbPlugin: FastifyPluginAsync = async (fastify, options) => {
-  
-  const pool = new Pool({
-    host: "localhost",
-    port: 5250, 
-    user: "postgres",
-    password: process.env.SENHA_DB,
-    database: "crud_fastify",
-    max: 20,
-  });
+const dbPlugin: FastifyPluginAsync = async (app, options) => {
+    await app.register(fastifyPostgres, {
+        host: process.env.DB_HOST,
+        port: Number(process.env.DB_PORT) || 5432,
+        user: process.env.DB_USER,
+        password: process.env.SENHA_DB,
+        database: process.env.DB_NAME,
+        ssl: false 
+    });
 
-  try {
-    const client = await pool.connect();
-    client.release(); 
-    fastify.log.info('PostgreSQL conectado com sucesso!');
-  } catch (erro) {
-    fastify.log.error('Erro fatal ao conectar no banco' + erro);
-    throw erro; 
-  }
-
-  fastify.decorate('db', pool);
-
-  fastify.addHook('onClose', async (instance) => {
-    await instance.db.end();
-    console.log('Pool de conexões fechado.');
-  });
-};
+    app.decorate('db', app.pg);
+}
 
 export default fp(dbPlugin);

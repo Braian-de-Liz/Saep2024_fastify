@@ -8,7 +8,11 @@ CREATE TABLE usuarios (
 
 CREATE TABLE tarefas (
     id SERIAL PRIMARY KEY,
-    titulo VARCHAR(255) NOT NULL,
-    descricao TEXT,
-    criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    id_usuario INTEGER NOT NULL,
+    setor VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'a fazer',
+    prioridade VARCHAR(50) NOT NULL,
+    descricao TEXT NOT NULL,
+    criado_em DATE DEFAULT CURRENT_DATE,
+    CONSTRAINT fk_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
 );
