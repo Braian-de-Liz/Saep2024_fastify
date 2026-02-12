@@ -1,16 +1,23 @@
-import fastify from "fastify";
+// imports básicos
+import 'dotenv/config';
+
+import fastify, { FastifyInstance } from "fastify";
+import type { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { validatorCompiler, serializerCompiler, } from "fastify-type-provider-zod";
 import cors from '@fastify/cors';
 import fastifyJwt from '@fastify/jwt';
-import { serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-type-provider-zod";
 
-import db from "./data/conecction.js";
-import insertTask from './routes/routs_tasks/salvar_Task.js';
-import cadastarr_user from './routes/routs_user/user_cadastro.js';
-import user_login from './routes/routs_user/user_login.js';
-import DeletarTask from "./routes/routs_tasks/deletarTask.js";
-import AtualizarTask from "./routes/routs_tasks/atualizarTask.js";
-import ListagemTasks from "./routes/routs_tasks/ListarTask.js";
+// consfigurações
+import prisma_plugin from "./lib/prisma.js";
 
+// Imports de rotas
+import { cadastarr_user } from "./routes/user/cadastro.js";
+import { Login_user } from "./routes/user/login_user.js";
+import { cadastrar_task } from "./routes/tarefas/registras_task.js";
+
+
+
+const PORT: number = Number(process.env.PORT);
 
 if (!process.env.JWT_PASSOWORD) {
     console.error("ERRO FATAL: A variável de ambiente JWT_PASSOWORD não foi definida.");
@@ -19,30 +26,30 @@ if (!process.env.JWT_PASSOWORD) {
 
 const JWT_PASSOWORD: string = process.env.JWT_PASSOWORD
 
-const aplicacao = fastify({ logger: true }).withTypeProvider<ZodTypeProvider>();
+
+const Fastify: FastifyInstance = fastify().withTypeProvider<ZodTypeProvider>();
+
+Fastify.setValidatorCompiler(validatorCompiler);
+Fastify.setSerializerCompiler(serializerCompiler);
+
+await Fastify.register(prisma_plugin);
+Fastify.register(cors, { origin: true });
+Fastify.register(fastifyJwt, { secret: JWT_PASSOWORD });
 
 
-aplicacao.setValidatorCompiler(validatorCompiler);
-aplicacao.setSerializerCompiler(serializerCompiler);
+Fastify.register(cadastarr_user, { prefix: "/api" });
+Fastify.register(Login_user, { prefix: "/api" });
+Fastify.register(cadastrar_task, { prefix: "/api" });
 
+const start = async () => {
 
-try {
-    await aplicacao.register(db);
-    await aplicacao.register(cors, { origin: true });
-    await aplicacao.register(fastifyJwt, { secret: JWT_PASSOWORD });
-
-    await aplicacao.register(insertTask, { prefix: '/api' });
-    await aplicacao.register(cadastarr_user, { prefix: '/api' });
-    await aplicacao.register(user_login, { prefix: '/api' });
-    await aplicacao.register(DeletarTask, { prefix: '/api' });
-    await aplicacao.register(AtualizarTask, { prefix: '/api' });
-    await aplicacao.register(ListagemTasks, { prefix: '/api' });
-
-    aplicacao.listen({ port: 3220, host: '0.0.0.0' }, () => {
-        console.log("Fastify rodando na porta 3220 com Zod ativado!");
-    });
-
-} catch (erro) {
-    aplicacao.log.error(erro);
-    process.exit(1);
+    try {
+        await Fastify.listen({ port: PORT, host: '0.0.0.0' });
+    }
+    catch (erro) {
+        console.warn("Erro ao inicializar servidor");
+        process.exit(1);
+    }
 }
+
+start();
