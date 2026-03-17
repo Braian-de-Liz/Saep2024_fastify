@@ -1,74 +1,58 @@
-import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { Hono } from 'hono';
 import { z } from 'zod';
-import bcrypt from "bcrypt";
+import { zValidator } from '@hono/zod-validator';
+import { users } from '../../lib/schema';
+import { eq } from 'drizzle-orm';
+import type { Bindings } from '../../lib/plugin_db';
 
-const cadastarr_user: FastifyPluginAsyncZod = async (Fastify, options) => {
+const cadastro_route = new Hono<{ Variables: Bindings }>();
 
-    const schema = {
-        schema: {
-            body: z.object({
-                nome: z.string().min(2).max(87),
-                email: z.string().min(6).email(),
-                senha: z.string().min(6)
-            })
-        },
-        Response: {
+const cadastroSchema = z.object({
+    nome: z.string().min(2).max(87),
+    email: z.string().min(6).email(),
+    senha: z.string().min(6)
+});
 
-            200: z.object({
-                status: z.string(),
-                menssagem: z.string()
-            }),
-            409: z.object({
-                status: z.string(),
-                message: z.string()
-            }),
-            500: z.object({
-                status: z.string(),
-                menssagem: z.string()
-            })
+cadastro_route.post('/usuario', zValidator('json', cadastroSchema), async (c) => {
+    const { nome, email, senha } = c.req.valid('json');
+    const db = c.get('db');
 
-        }
-    }
+    try {
+        const [verificarUser] = await db.select()
+            .from(users)
+            .where(eq(users.email, email))
+            .limit(1);
 
-    Fastify.post("/usuario", schema, async (request, reply) => {
-        const { nome, email, senha } = request.body;
-
-        try {
-            const verificar_user = await Fastify.prisma.usuario.findUnique({ where: { email } });
-
-
-            if (verificar_user) {
-                return reply.send({
-                    status: 'erro',
-                    message: "Email já cadastrado."
-                });
-            }
-
-            const senha_segura = await bcrypt.hash(senha, 10);
-
-            await Fastify.prisma.usuario.create({
-                data: {
-                    nome, email, senha: senha_segura
-                }
-            });
-
-
-            return reply.send({
-                status: 'Sucesso',
-                menssagem: "usuário cadastrado com sucesso"
-            });
-
-
-        }
-        catch (erro) {
-            Fastify.log.error(erro);
-
-            return reply.status(500).send({
+        if (verificarUser) {
+            c.status(409);
+            return c.json({
                 status: 'erro',
-                menssagem: "erro interno do servidor"
+                message: 'Email já cadastrado.'
             });
         }
-    });
-}
 
-export { cadastarr_user };
+        const senhaSegura = await Bun.password.hash(senha, {
+            algorithm: "argon2id",
+            memoryCost: 4096, 
+            timeCost: 2
+        });
+
+        await db.insert(users).values({ nome, email, senha: senhaSegura });
+
+        return c.json({
+            status: 'Sucesso',
+            message: 'usuário cadastrado com sucesso'
+        }, 201);
+
+    }
+    catch (erro) {
+        console.error(erro);
+        c.status(500);
+        return c.json({
+            status: 'erro',
+            message: 'erro interno do servidor'
+        });
+    }
+});
+
+export { cadastro_route };
